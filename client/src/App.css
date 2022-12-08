@@ -64,6 +64,10 @@ footer a {
   transition: all 0.3s ease-in-out;
 }
 
+.btn:hover {
+  background: #668c8a;
+}
+
 .googleBtn {
   background: #668c8a;
   width: 200px;
@@ -156,4 +160,8 @@ footer a:hover {
   font-size: 20px;
   line-height: 1.6;
   padding-top: 20px;
+}
+
+.fakeScreen {
+  color: white;
 }

@@ -59,7 +59,6 @@ const EditorPage = (props) => {
         }),
       }
     );
-    console.log(language);
     const jsonResponse = await response.json();
 
     let jsonGetSolution = {
@@ -99,7 +98,7 @@ const EditorPage = (props) => {
 
       setOutput(
         (prev) =>
-          (prev += `Results :\n${output}\nExecution Time : ${jsonGetSolution.time} Secs\nMemory used : ${jsonGetSolution.memory} bytes`)
+          (prev += `Results :\n${output}\n Execution Time : ${jsonGetSolution.time} Secs\n Memory used : ${jsonGetSolution.memory} bytes`)
       );
     } else if (jsonGetSolution.stderr) {
       const error = atob(jsonGetSolution.stderr);
@@ -248,7 +247,6 @@ const EditorPage = (props) => {
           <p className='line1'>
             Output<span className='cursor1'> : </span> <span> {output} </span>
           </p>
-          <p>{}</p>
         </div>
       </div>
     </div>
