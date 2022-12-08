@@ -22,48 +22,101 @@ const EditorPage = (props) => {
   const [clients, setClients] = useState([]);
   const [output, setOutput] = useState('');
 
-  function addlist() {
+  async function addlist() {
     var select = document.getElementById('language');
-    for (let key in languageList) {
+
+    languageList.map((language) => {
       var option = document.createElement('option');
-      option.text = key;
-      option.value = languageList[key];
+      option.text = language.name;
+      option.value = language.id;
       select.add(option);
-    }
+    });
   }
 
   const compileHandler = async () => {
     const code = codeRef.current.toString();
+    const language = document.querySelector('#language').value;
     const stdin = document
       .querySelector('#stdin')
       .value.split(/[|]+/)
       .join('\n')
       .toString();
-    const language = document.querySelector('#language').value.toString();
-    await fetch('https://api.jdoodle.com/v1/execute', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: {
-        clientId: '7b8e91133383e32282478bb623213879',
-        clientSecret:
-          'a7ea57aeda9059b53a4d8998365e908f42d74ce6911432f1cd85ac00c2d1aedb',
-        script: code,
-        stdin: stdin,
-        language: language,
-        versionIndex: '0',
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data.data());
-        setOutput(data.data());
-      })
-      .catch((e) => {
-        console.log(e.message);
-      });
+    const response = await fetch(
+      'https://judge0-ce.p.rapidapi.com/submissions',
+      {
+        method: 'POST',
+        headers: {
+          'x-rapidapi-host': 'judge0-ce.p.rapidapi.com',
+          'x-rapidapi-key':
+            '577f6461damsha4cf6d679bbee8cp18bfc0jsnb10b552c69bb', // Get yours for free at https://rapidapi.com/judge0-official/api/judge0-ce/
+          'content-type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
+          source_code: code,
+          stdin: stdin,
+          language_id: language,
+        }),
+      }
+    );
+    console.log(language);
+    const jsonResponse = await response.json();
+
+    let jsonGetSolution = {
+      status: { description: 'Queue' },
+      stderr: null,
+      compile_output: null,
+    };
+
+    while (
+      jsonGetSolution.status.description !== 'Accepted' &&
+      jsonGetSolution.stderr == null &&
+      jsonGetSolution.compile_output == null
+    ) {
+      setOutput(
+        `Creating Submission ... \nSubmission Created ...\nChecking Submission Status\nstatus : ${jsonGetSolution.status.description}`
+      );
+      if (jsonResponse.token) {
+        let url = `https://judge0-ce.p.rapidapi.com/submissions/${jsonResponse.token}?base64_encoded=true`;
+
+        const getSolution = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'x-rapidapi-host': 'judge0-ce.p.rapidapi.com',
+            'x-rapidapi-key':
+              '577f6461damsha4cf6d679bbee8cp18bfc0jsnb10b552c69bb', // Get yours for free at https://rapidapi.com/judge0-official/api/judge0-ce/
+            'content-type': 'application/json',
+          },
+        });
+
+        jsonGetSolution = await getSolution.json();
+      }
+    }
+    if (jsonGetSolution.stdout) {
+      const output = atob(jsonGetSolution.stdout);
+
+      setOutput('');
+
+      setOutput(
+        (prev) =>
+          (prev += `Results :\n${output}\nExecution Time : ${jsonGetSolution.time} Secs\nMemory used : ${jsonGetSolution.memory} bytes`)
+      );
+    } else if (jsonGetSolution.stderr) {
+      const error = atob(jsonGetSolution.stderr);
+
+      setOutput('');
+
+      setOutput((prev) => (prev += `\n Error :${error}`));
+    } else {
+      const compilation_error = atob(jsonGetSolution.compile_output);
+
+      setOutput('');
+
+      setOutput(`\n Error :${compilation_error}`);
+    }
   };
+
+  // console.log(jsonResponse);
 
   //for initialisation of the socket-client
   useEffect(() => {
@@ -202,75 +255,134 @@ const EditorPage = (props) => {
   );
 };
 
-const languageList = {
-  C: 'c',
-  'C-99': 'c99',
-  'C++': 'cpp',
-  'C++ 14': 'cpp14',
-  'C++ 17': 'cpp17',
-  PHP: 'php',
-  Perl: 'perl',
-  'Python 2': 'python2',
-  'Python 3': 'python3',
-  Ruby: 'ruby',
-  'GO Lang': 'go',
-  Scala: 'scala',
-  'Bash Shell': 'bash',
-  SQL: 'sql',
-  Pascal: 'pascal',
-  'C#': 'csharp',
-  'VB.Net': 'vbn',
-  Haskell: 'haskell',
-  'Objective C': 'objc',
-  Swift: 'swift',
-  Groovy: 'groovy',
-  Fortran: 'fortran',
-  Lua: 'lua',
-  TCL: 'tcl',
-  Hack: 'hack',
-  RUST: 'rust',
-  D: 'd',
-  Ada: 'ada',
-  Java: 'java',
-  'R Language': 'r',
-  'FREE BASIC': 'freebasic',
-  VERILOG: 'verilog',
-  COBOL: 'cobol',
-  Dart: 'dart',
-  YaBasic: 'yabasic',
-  Clojure: 'clojure',
-  NodeJS: 'nodejs',
-  Scheme: 'scheme',
-  Forth: 'forth',
-  Prolog: 'prolog',
-  Octave: 'octave',
-  CoffeeScript: 'coffeescript',
-  Icon: 'icon',
-  'F#': 'fsharp',
-  'Assembler - NASM': 'nasm',
-  'Assembler - GCC': 'gccasm',
-  Intercal: 'intercal',
-  Nemerle: 'nemerle',
-  Ocaml: 'ocaml',
-  Unlambda: 'unlambda',
-  Picolisp: 'picolisp',
-  SpiderMonkey: 'spidermonkey',
-  'Rhino JS': 'rhino',
-  CLISP: 'clisp',
-  Elixir: 'elixir',
-  Factor: 'factor',
-  Falcon: 'falcon',
-  Fantom: 'fantom',
-  Nim: 'nim',
-  Pike: 'pike',
-  SmallTalk: 'smalltalk',
-  'OZ Mozart': 'mozart',
-  LOLCODE: 'lolcode',
-  Racket: 'racket',
-  Kotlin: 'kotlin',
-  Whitespace: 'whitespace',
-  Erlang: 'erlang',
-  J: 'jlang',
-};
-
+const languageList = [
+  {
+    id: 45,
+    name: 'Assembly (NASM 2.14.02)',
+  },
+  {
+    id: 46,
+    name: 'Bash (5.0.0)',
+  },
+  {
+    id: 47,
+    name: 'Basic (FBC 1.07.1)',
+  },
+  {
+    id: 48,
+    name: 'C (GCC 7.4.0)',
+  },
+  {
+    id: 52,
+    name: 'C++ (GCC 7.4.0)',
+  },
+  {
+    id: 49,
+    name: 'C (GCC 8.3.0)',
+  },
+  {
+    id: 53,
+    name: 'C++ (GCC 8.3.0)',
+  },
+  {
+    id: 50,
+    name: 'C (GCC 9.2.0)',
+  },
+  {
+    id: 54,
+    name: 'C++ (GCC 9.2.0)',
+  },
+  {
+    id: 51,
+    name: 'C# (Mono 6.6.0.161)',
+  },
+  {
+    id: 55,
+    name: 'Common Lisp (SBCL 2.0.0)',
+  },
+  {
+    id: 56,
+    name: 'D (DMD 2.089.1)',
+  },
+  {
+    id: 57,
+    name: 'Elixir (1.9.4)',
+  },
+  {
+    id: 58,
+    name: 'Erlang (OTP 22.2)',
+  },
+  {
+    id: 44,
+    name: 'Executable',
+  },
+  {
+    id: 59,
+    name: 'Fortran (GFortran 9.2.0)',
+  },
+  {
+    id: 60,
+    name: 'Go (1.13.5)',
+  },
+  {
+    id: 61,
+    name: 'Haskell (GHC 8.8.1)',
+  },
+  {
+    id: 62,
+    name: 'Java (OpenJDK 13.0.1)',
+  },
+  {
+    id: 63,
+    name: 'JavaScript (Node.js 12.14.0)',
+  },
+  {
+    id: 64,
+    name: 'Lua (5.3.5)',
+  },
+  {
+    id: 65,
+    name: 'OCaml (4.09.0)',
+  },
+  {
+    id: 66,
+    name: 'Octave (5.1.0)',
+  },
+  {
+    id: 67,
+    name: 'Pascal (FPC 3.0.4)',
+  },
+  {
+    id: 68,
+    name: 'PHP (7.4.1)',
+  },
+  {
+    id: 43,
+    name: 'Plain Text',
+  },
+  {
+    id: 69,
+    name: 'Prolog (GNU Prolog 1.4.5)',
+  },
+  {
+    id: 70,
+    name: 'Python (2.7.17)',
+  },
+  {
+    id: 71,
+    name: 'Python (3.8.1)',
+  },
+  {
+    id: 72,
+    name: 'Ruby (2.7.0)',
+  },
+  {
+    id: 73,
+    name: 'Rust (1.40.0)',
+  },
+  {
+    id: 74,
+    name: 'TypeScript (3.7.4)',
+  },
+];
 export default EditorPage;
